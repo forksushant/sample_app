@@ -2,51 +2,39 @@ require 'spec_helper'
 
 describe "StaticPages" do
 	let(:base_title) { "Ruby on Rails Tutorial Sample App" }
+  subject { page }
   describe "Home page" do
-    it "should have the content 'Sample App'" do
-      # Run the generator again with the --webrat flag if you want to use webrat methods/matchers
-      visit '/static_pages/home'
-      page.should have_content('Sample App')
-    end
+    before { visit root_path }
+    it { should have_content('Sample App') }
 
-    it "should have the title 'Home'" do
-    	visit '/static_pages/home'
-    	page.should have_selector('title',
-    						:text => "#{base_title} | Home")
-    end
+    it { should have_selector('title',
+    						text: full_title("Home")) }
   end
+
   describe "Help Page" do
-
-  	it "should have the content 'Help'" do
-  		visit '/static_pages/help'
-  		page.should have_content('Help')
-  	end
-  	it "should have the title 'Help'" do
-    	visit '/static_pages/help'
-    	page.should have_selector('title',
-    						:text => "#{base_title} | Help")
-    end
+    before { visit help_path }
+  	it { should have_content('Help') }
+  	it { should have_selector('title',
+    						text: full_title("Help")) }
   end
+
   describe "About page" do
-  	it "should have the contect 'About Us'" do
-  		visit '/static_pages/about'
-  		page.should have_content('About Us')
-	  end
-	  it "should have the title 'About Us'" do
-    	visit '/static_pages/about'
-    	page.should have_selector('title',
-    						:text => "#{base_title} | About Us")
-    	end
+    before { visit about_path }
+  	it { should have_content('About Us') }
+	  it { should have_selector('title',
+    						text: full_title("About Us")) }
 	end
+
 	describe "Contact Us page" do
-		it "should have the content 'Contact Us'" do
-			visit '/static_pages/contact'
-			page.should have_selector("h1", :text => 'Contact Us')		
-		end
-		it "should have the title 'Contact Us'" do
-			visit '/static_pages/contact'			
-			page.should have_selector('title', :text => "#{base_title} | Contact Us")
-		end
+    before { visit contact_path }
+		it { should have_selector("h1",    text: 'Contact Us')	}
+		it { should have_selector('title', text: full_title("Contact Us")) }
 	end
+
+  describe "User Page" do 
+    before { visit signup_path }
+    it { should have_selector('h1',    text: "Sign up") }
+    it { should have_selector('title', text: full_title("Sign up")) }
+  end
 
 end
