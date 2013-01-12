@@ -31,10 +31,4 @@ describe "StaticPages" do
 		it { should have_selector('title', text: full_title("Contact Us")) }
 	end
 
-  describe "User Page" do 
-    before { visit signup_path }
-    it { should have_selector('h1',    text: "Sign up") }
-    it { should have_selector('title', text: full_title("Sign up")) }
-  end
-
 end
