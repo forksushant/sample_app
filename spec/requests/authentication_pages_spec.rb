@@ -44,10 +44,10 @@ describe "AuthenticationPages" do
    	end
   end
   describe "authorization" do
-    describe "for none signed user" do
+    describe "for non-signed user" do
       let(:user) { FactoryGirl.create(:user) }
 
-      describe "when attemting to vosot a protected page" do
+      describe "when attemting to visit a protected page" do
         before do
           visit edit_user_path(user)
           fill_in "Email", with: user.email
@@ -74,6 +74,16 @@ describe "AuthenticationPages" do
         describe "submitting the update action" do
           before { put user_path(user)}
           specify {response.should redirect_to(signin_path)}
+        end
+        describe "in the microposts controller" do
+          describe "submitting the create action" do
+            before { post microposts_path }
+            specify { response.should redirect_to(signin_path) }
+          end
+          describe "submitting the delete action" do
+            before { delete micropost_path(FactoryGirl.create(:micropost))}
+            specify { response.should redirect_to(signin_path) }
+          end
         end
       end
     end

@@ -24,6 +24,8 @@ describe User do
 	it { should respond_to(:password) }
 	it { should respond_to(:password_confirmation) }
 	it { should respond_to(:authenticate) }
+	it { should respond_to(:microposts) }
+	it { should respond_to(:feed) }
 	it { should respond_to(:remember_token) }
 	it { should respond_to(:admin)}
 
@@ -49,73 +51,103 @@ describe User do
 	describe "when email format is invalid" do
 		it "sould be invalid" do
 			addresses = %w[user@foo,com user_at_foo.org example.user@foo. 
-				foo@bar_baz.com foo@bar+bax.com]
-				addresses.each do |invalid_address|
-					@user.email = invalid_address
-					@user.should_not be_valid
-				end
+											foo@bar_baz.com foo@bar+bax.com]
+			addresses.each do |invalid_address|
+				@user.email = invalid_address
+				@user.should_not be_valid
 			end
 		end
-		describe "when email format is valid" do
-			it "should be valid" do
-				addresses = %w[user@foo.COM A_US-ER@f.b.org frst.lst@foo.jp a+b@baz.cn]
-				addresses.each do |valid_address|
-					@user.email = valid_address
-					@user.should be_valid
-				end
+	end
+	describe "when email format is valid" do
+		it "should be valid" do
+			addresses = %w[user@foo.COM A_US-ER@f.b.org frst.lst@foo.jp a+b@baz.cn]
+			addresses.each do |valid_address|
+				@user.email = valid_address
+				@user.should be_valid
 			end
 		end
-		describe "when email address is already taken" do
-			before do
-				user_with_same_email = @user.dup
-				user_with_same_email.email = @user.email.upcase
-				user_with_same_email.save
-			end
-			it { should_not be_valid }
+	end
+	describe "when email address is already taken" do
+		before do
+			user_with_same_email = @user.dup
+			user_with_same_email.email = @user.email.upcase
+			user_with_same_email.save
 		end
-		describe "when password is not present" do
-			before { @user.password = @user.password_confirmation = " " }
-			it { should_not be_valid }
-		end
+		it { should_not be_valid }
+	end
+	describe "when password is not present" do
+		before { @user.password = @user.password_confirmation = " " }
+		it { should_not be_valid }
+	end
 
-		describe "when password dosen't match password_confirmation" do
-			before { @user.password_confirmation = "mismatch" }
-			it { should_not be_valid }
-		end
-		describe "when password confirmation is nil" do
+	describe "when password dosen't match password_confirmation" do
+		before { @user.password_confirmation = "mismatch" }
+		it { should_not be_valid }
+	end
+	describe "when password confirmation is nil" do
   		before { @user.password_confirmation = nil }
   		it { should_not be_valid }
+	end
+
+	describe "retun value of authentication method" do
+		before { @user.save }
+		let(:found_user) { User.find_by_email(@user.email) }
+
+		describe "with valid password" do
+			it { should == found_user.authenticate(@user.password) }
+		end
+		describe "with invalid password " do
+			let (:user_for_invalid_password) { found_user.authenticate("invalid") }
+
+			it { should_not == user_for_invalid_password }
+			specify { user_for_invalid_password.should be_false }
+		end
+		describe "with a password that's too short" do
+			before { @user.password =  @user.password_confirmation = "a"*5 }
+
+			it { should be_invalid }
+		end
+	end
+	describe "remember token" do
+		before { @user.save }
+		its(:remember_token) { should_not be_blank }
+	end
+	describe "with admin attributes set to true" do
+		before do
+			@user.save!
+			@user.toggle!(:admin)
+		end
+		it { should be_admin}
+	end
+	describe "microposts associations" do
+		before { @user.save }
+		let!(:older_micropost) do
+			FactoryGirl.create(:micropost, user: @user, created_at: 1.day.ago)
+		end
+		let!(:newer_micropost) do
+			FactoryGirl.create(:micropost, user: @user, created_at: 1.hour.ago)
 		end
 
-		describe "retun value of authentication method" do
-			before { @user.save }
-			let(:found_user) { User.find_by_email(@user.email) }
-
-			describe "with valid password" do
-				it { should == found_user.authenticate(@user.password) }
-			end
-			describe "with invalid password " do
-				let (:user_for_invalid_password) { found_user.authenticate("invalid") }
-
-				it { should_not == user_for_invalid_password }
-				specify { user_for_invalid_password.should be_false }
-			end
-			describe "with a password that's too short" do
-				before { @user.password =  @user.password_confirmation = "a"*5 }
-
-				it { should be_invalid }
+		it "should have the right micropost in the right order" do
+			@user.microposts.should == [newer_micropost, older_micropost]
+		end
+		it "should destroy associated micropost" do
+			microposts = @user.microposts.dup
+			@user.destroy
+			microposts.should_not be_empty
+			microposts.each do |micropost|
+				Micropost.find_by_id(micropost.id).should be_nil
 			end
 		end
-		describe "remember token" do
-			before { @user.save }
-			its(:remember_token) { should_not be_blank }
-		end
-		describe "with admin attributes set to true" do
-			before do
-				@user.save!
-				@user.toggle!(:admin)
+		describe "status" do
+			let(:unfollowed_post) do
+				FactoryGirl.create(:micropost, user: FactoryGirl.create(:user))
 			end
-			it { should be_admin}
-		end
 
+			its(:feed) { should include(newer_micropost)}
+			its(:feed) { should include(older_micropost)}
+			its(:feed) { should_not include(unfollowed_post)}
+		end
+		
+	end
 end
